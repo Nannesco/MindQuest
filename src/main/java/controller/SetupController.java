@@ -2,7 +2,6 @@ package controller;
 
 import domain.*;
 import config.SetupGioco;
-import ui.Info;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -37,7 +36,7 @@ class SetupController {
     }
 
     void onSceltaRegoleEffettuata(boolean leggiRegole) {
-        if (leggiRegole) notifica(obs -> obs.onRegoleMostrate(Info.REGOLE));
+        if (leggiRegole) notifica(obs -> obs.onRegoleMostrate());
         notifica(PartitaObserver::onRichiestaConfigurazioneGiocatori);
     }
 

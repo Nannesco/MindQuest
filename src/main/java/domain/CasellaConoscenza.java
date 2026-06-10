@@ -2,8 +2,6 @@ package domain;
 
 import java.util.function.Consumer;
 
-import controller.GestoreCasella;
-
 public class CasellaConoscenza extends Casella {
 
     private final String difficolta;

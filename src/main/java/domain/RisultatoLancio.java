@@ -2,8 +2,6 @@ package domain;
 
 import java.util.function.Consumer;
 
-import controller.GestoreCasella;
-
 /**
  * DTO immutabile restituito da Partita.eseguiLancioEAssegnaCasella().
  * Il Consumer<GestoreCasella> cattura i dati specifici del tipo di casella

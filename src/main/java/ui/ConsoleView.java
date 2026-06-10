@@ -43,8 +43,8 @@ public class ConsoleView implements PartitaObserver {
     }
 
     @Override
-    public void onRegoleMostrate(String testoRegole) {
-        System.out.println(testoRegole);
+    public void onRegoleMostrate() {
+        System.out.println(Info.REGOLE);
         System.out.println("\nPremere INVIO per proseguire alla creazione della partita...");
         leggiInput();
 

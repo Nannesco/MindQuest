@@ -9,7 +9,6 @@ import services.foundation.GestoreDB;
 public class Partita {
 
     private static Partita istanza;
-    private final GestoreDB db;
 
     private Tabellone tabellone;
     private List<String> nomiGiocatori;
@@ -28,7 +27,6 @@ public class Partita {
     private Casella ultimaCasella;
 
     private Partita() {
-        this.db = GestoreDB.getInstance(DBConfig.DB_URL, DBConfig.DB_USER, DBConfig.DB_PASSWORD);
         this.giocatori = new ArrayList<>();
         this.nomiGiocatori = new ArrayList<>();
         this.idGiocatori = new ArrayList<>();
@@ -162,7 +160,7 @@ public class Partita {
                 tabellone.getNumeroCaselle(), tabellone.getMappaCaselleEvento());
     }
 
-    public void chiudiDB() { db.chiudiConnessione(); }
+    public void chiudiDB() { /*db.chiudiConnessione(); */ }
 
     // =========================================================================
     // GETTER

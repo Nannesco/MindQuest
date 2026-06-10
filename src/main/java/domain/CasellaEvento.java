@@ -2,8 +2,6 @@ package domain;
 
 import java.util.function.Consumer;
 
-import controller.GestoreCasella;
-
 public class CasellaEvento extends Casella {
     
     private final StrategiaEvento strategiaBase;

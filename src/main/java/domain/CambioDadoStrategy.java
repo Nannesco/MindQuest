@@ -2,8 +2,6 @@ package domain;
 
 import java.util.List;
 
-import controller.NotificatoreEvento;
-
 public class CambioDadoStrategy implements StrategiaEvento {
 
     private String dadoVecchio;

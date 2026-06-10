@@ -9,7 +9,7 @@ public interface PartitaObserver {
     // eventi di setup iniziale 
     void onGiocoAvviato();
     void onRichiestaLetturaRegole();
-    void onRegoleMostrate(String testoRegole);
+    void onRegoleMostrate();
     void onRichiestaConfigurazioneGiocatori();
     void onGiocatoriInizializzati(List<Giocatore> giocatori, List<String> ordineTurni);
 

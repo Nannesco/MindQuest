@@ -2,8 +2,6 @@ package domain;
 
 import java.util.List;
 
-import controller.NotificatoreEvento;
-
 public class AttivazioneMaledizioneStrategy implements StrategiaEvento {
 
     @Override

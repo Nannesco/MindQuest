@@ -3,8 +3,6 @@ package domain;
 import java.util.List;
 import java.util.Random;
 
-import controller.NotificatoreEvento;
-
 public class ModificaPuntiStrategy implements StrategiaEvento {
 
     private final Random random = new Random();

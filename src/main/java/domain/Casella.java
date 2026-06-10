@@ -2,8 +2,6 @@ package domain;
 
 import java.util.function.Consumer;
 
-import controller.GestoreCasella;
-
 public abstract class Casella {
 
 	private final int numeroCasella;

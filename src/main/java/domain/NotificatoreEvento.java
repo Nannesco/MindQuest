@@ -1,4 +1,4 @@
-package controller;
+package domain;
 
 /**
 Interfaccia implementata da EventoController.
