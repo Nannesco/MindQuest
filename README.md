@@ -1,0 +1,1 @@
+MindQuest è un gioco da tavolo digitale che si svolge a turni che integra le meccaniche di movimento casuale tipiche dei giochi di percorso (come il "Gioco dell'oca") con dinamiche competitive basate su quesiti di cultura generale (come “Trivia Crack”).
