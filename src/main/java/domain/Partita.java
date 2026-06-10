@@ -3,8 +3,6 @@ package domain;
 import java.util.ArrayList;
 import java.util.List;
 
-import config.DBConfig;
-import services.foundation.GestoreDB;
 
 public class Partita {
 
