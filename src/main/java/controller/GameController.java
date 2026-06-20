@@ -1,45 +1,55 @@
 package controller;
 
 import domain.*;
+import domain.contratti.GestoreCasella;
+import domain.dto.InfoGiocatori;
+import domain.dto.InfoTabellone;
+import domain.dto.RisultatoLancio;
+import domain.dto.RisultatoRisposta;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-class GameController implements GestoreCasella {
+import controller.contratti.GameObserver;
+import controller.contratti.GameSubject;
+
+public class GameController implements GestoreCasella, GameSubject {
 
     private final Partita model;
-    private final List<PartitaObserver> observers;
-    private final EventoController eventoCtrl;
+    private final List<GameObserver> observers;
 
-    GameController(Partita model, List<PartitaObserver> observers, EventoController eventoCtrl) {
+    public GameController( Partita model) {
         this.model = model;
-        this.observers = observers;
-        this.eventoCtrl = eventoCtrl;
+        this.observers = new ArrayList<>();
     }
 
-    private void notifica(Consumer<PartitaObserver> azione) {
-        for (PartitaObserver obs : observers) azione.accept(obs);
+    public void addObserver(GameObserver observer) {
+        observers.add(observer);
+    }
+
+    private void notifica(Consumer<GameObserver> azione) {
+        for (GameObserver obs : observers) azione.accept(obs);
     }
 
     // FLUSSO TURNO
 
     void avviaTurnoCorrente() {
         if (model.isGiocoFinito()) { 
-            model.chiudiDB();
             String nome = model.getVincitore().getUsername();
             notifica(obs -> obs.onGiocoTerminato(nome));
             return;
         }
         Giocatore g = model.getGiocatoreCorrente();
-        int turno = model.getTurnoCorrente();
+        int turno = model.getRoundCorrente();
         notifica(obs -> obs.onTurnoIniziato(turno, g.toString()));
     }
 
     void concludiTurno() {
         boolean roundAvanzato = model.avanzaTurnoGiocatore();
         if (roundAvanzato) {
-            int turno = model.getTurnoCorrente();
-            notifica(obs -> obs.onAvanzamentoTurno(turno));
+            int round = model.getRoundCorrente();
+            notifica(obs -> obs.onAvanzamentoRound(round));
         }
         avviaTurnoCorrente();
     }
@@ -47,19 +57,26 @@ class GameController implements GestoreCasella {
 
     // AZIONI UTENTE
 
-    void onLancioDadoRichiesto() {
+    public void onPrimoTurnoIniziato() {
+        avviaTurnoCorrente();
+    }
+
+    @Override
+    public void onLancioDadoRichiesto() {
         RisultatoLancio r = model.eseguiLancioEAssegnaCasella();
 
-        StatoTabellone stato = model.getStatoTabellone();
-        notifica(obs -> obs.onTabelloneAggiornato(stato.nomi, stato.id, stato.posizioni, stato.punti, stato.numeroCaselle, stato.mappaEventi));
-        notifica(obs -> obs.onDadoLanciato(r.passi, r.numeroCasella, r.puntiDado, r.nomeDado, r.bonusDado));
+        InfoTabellone statoT = model.getInfoTabellone();
+        InfoGiocatori statoG = model.getInfoGiocatori();
+        notifica(obs -> obs.onTabelloneAggiornato(statoG.nomi(), statoG.id(), statoG.posizioni(), statoG.punti(), statoT.numeroCaselle(), statoT.mappaEventi()));
+        notifica(obs -> obs.onDadoLanciato(r.passi(), r.numeroCasella(), r.puntiDado(), r.nomeDado(), r.bonusDado()));
 
         r.gestisci(this); // dispatch polimorfico: nessun switch
     }
-
-    void onRispostaDomandaInserita(String risposta) {
+    
+    @Override
+    public void onRispostaDomandaInserita(String risposta) {
         RisultatoRisposta esito = model.processaRisposta(risposta);
-        notifica(obs -> obs.onEsitoDomandaElaborato(esito.corretta, esito.bonusMessage, esito.puntiGuadagnati, esito.rispostaCorretta, esito.puntiTotali));
+        notifica(obs -> obs.onEsitoDomandaElaborato(esito.corretta(), esito.bonusMessage(), esito.puntiGuadagnati(), esito.rispostaCorretta(), esito.puntiTotali()));
         avviaProssimaDomanda();
     }
 
@@ -76,18 +93,13 @@ class GameController implements GestoreCasella {
         model.preparaEvento();
         if (model.isEventoAttivo()) {
             notifica(obs -> obs.onCasellaEventoRaggiunta(tipoEvento));
-            StrategiaEvento strategia = model.getStrategiaAttiva();
-            if (strategia.richiedeAvversario()) {
-                ArrayList<String> avversari = model.getNomiAvversariEscluso(model.getGiocatoreCorrente());
-                String sfidante = model.getGiocatoreCorrente().getUsername();
-                notifica(obs -> obs.onRichiestaSfidato(sfidante, avversari));
-                // flusso sospeso: riprende via EventoController.onAvversarioScelto()
-            } else {
-                eventoCtrl.eseguiEventoSemplice();
-            }
         } else {
             concludiTurno();
         }
+    }
+
+    public void onEventoTerminato() {
+        concludiTurno();
     }
 
     private void avviaProssimaDomanda() {

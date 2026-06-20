@@ -10,18 +10,12 @@ import java.util.Map;
 
 
 public class RegoleRepository {
-        private static RegoleRepository instance;
+
     
-        private RegoleRepository() {
+        protected RegoleRepository() {
 
         }
     
-        public static RegoleRepository getInstance() {
-            if (instance == null) {
-                instance = new RegoleRepository();
-            }
-            return instance;
-        }
     
         public Map<String, String> caricaRegole() {
         Connection connessione = GestoreDB.getInstance().getConnessione();

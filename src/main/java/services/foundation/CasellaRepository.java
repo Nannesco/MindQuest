@@ -8,28 +8,22 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import domain.AttivazioneMaledizioneStrategy;
-import domain.CambioDadoStrategy;
-import domain.Casella;
-import domain.CasellaConoscenza;
-import domain.CasellaEvento;
-import domain.FineGiocoStrategy;
-import domain.ModificaPuntiStrategy;
-import domain.SfidaUnoControUnoStrategy;
+import domain.caselle.Casella;
+import domain.caselle.CasellaConoscenza;
+import domain.caselle.CasellaEvento;
+import domain.strategie.AttivazioneMaledizioneStrategy;
+import domain.strategie.CambioDadoStrategy;
+import domain.strategie.FineGiocoStrategy;
+import domain.strategie.ModificaPuntiStrategy;
+import domain.strategie.SfidaUnoControUnoStrategy;
 
 public class CasellaRepository {
-    public static CasellaRepository istanzaUnica;
 
 
 
-    private CasellaRepository() {
-    }
 
-    public static CasellaRepository getInstance() {
-        if (istanzaUnica == null) {
-            istanzaUnica = new CasellaRepository();
-        }
-        return istanzaUnica;
+    protected CasellaRepository() {
+
     }
 
     public Casella getCasellaByID(int posizione) {

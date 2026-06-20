@@ -1,5 +1,7 @@
 package domain;
 
+import domain.pedine.Pedina;
+
 public class Giocatore {
 
 	private String username;

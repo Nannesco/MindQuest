@@ -13,19 +13,12 @@ import domain.Domanda;
 
 public class DomandaRepository {
 
-    private static DomandaRepository istanzaUnica;
     private final Set<Integer> domandeUscite;
 
-    private DomandaRepository() {
+    protected DomandaRepository() {
         this.domandeUscite = new HashSet<>();
     }
 
-    public static DomandaRepository getInstance() {
-        if (istanzaUnica == null) {
-            istanzaUnica = new DomandaRepository();
-        }
-        return istanzaUnica;
-    }
 
     public void resettaMemoriaDomande() {
         this.domandeUscite.clear();
@@ -116,7 +109,7 @@ public class DomandaRepository {
         return pesca(queryBase);
     }
 
-    public Domanda pescaDomandabyDifficolta(String difficolta) {
+    public Domanda pescaDomandaByDifficolta(String difficolta) {
         String queryBase = "SELECT ID, Testo, OpzioneA, OpzioneB, OpzioneC, OpzioneD, RispostaCorretta, Difficolta, Materia FROM domanda WHERE Difficolta = ?";
         return pesca(queryBase, difficolta);
     } 

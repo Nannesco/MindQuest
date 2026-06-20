@@ -1,53 +1,56 @@
 package controller;
 
 import domain.*;
-import config.SetupGioco;
+import domain.regole.RegolePedina;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-class SetupController {
+import controller.contratti.SetupObserver;
+import controller.contratti.SetupSubject;
+
+public class SetupController implements SetupSubject {
 
     private final Partita model;
-    private final SetupGioco setup;
-    private final List<PartitaObserver> observers;
-    private final Coordinatore coordinatore;
+    private final List<SetupObserver> observers;
 
-    SetupController(Partita model, SetupGioco setup, List<PartitaObserver> observers, Coordinatore coordinatore) {
-        this.model = model;
-        this.setup = setup;
-        this.observers = observers;
-        this.coordinatore = coordinatore;
+    public SetupController(Partita model) {
+        this.model     = model;
+        this.observers = new ArrayList<>();
     }
 
-    private void notifica(Consumer<PartitaObserver> azione) {
-        for (PartitaObserver obs : observers) azione.accept(obs);
+    private void notifica(Consumer<SetupObserver> azione) {
+        for (SetupObserver obs : observers) azione.accept(obs);
     }
 
-    /* 
-    void avviaApplicazione() {
-        notifica(PartitaObserver::onGiocoAvviato);
+    public void addObserver(SetupObserver observer) {
+        observers.add(observer);
     }
 
-    */
-
-    void onInizioPremuto() {
-        notifica(PartitaObserver::onRichiestaLetturaRegole);
+    @Override
+    public void onInizioPremuto() {
+        notifica(SetupObserver::onRichiestaLetturaRegole);
     }
 
-    void onSceltaRegoleEffettuata(boolean leggiRegole) {
+    @Override
+    public void onSceltaRegoleEffettuata(boolean leggiRegole) {
         if (leggiRegole) notifica(obs -> obs.onRegoleMostrate());
-        notifica(PartitaObserver::onRichiestaConfigurazioneGiocatori);
+        notifica(SetupObserver::onRichiestaConfigurazioneGiocatori);
     }
 
-    void onAnagraficaGiocatoriInserita(ArrayList<String> nomiGiocatori) {
-        Tabellone       tabellone = setup.creaTabellone();
-        List<Giocatore> giocatori = setup.creaEOrdinaGiocatori(nomiGiocatori);
-        model.impostaMondoDiGioco(tabellone, giocatori);
+    @Override
+    public void onAnagraficaGiocatoriInserita(ArrayList<String> nomiGiocatori) {
+        RegolePedina regolePedina = model.getRegole().getRegolePedina();
+        Lobby lobby = new Lobby(nomiGiocatori, regolePedina);
+        model.setLobby(lobby);
 
-        List<String> ordine = model.getNomiGiocatori();
-        notifica(obs -> obs.onGiocatoriInizializzati(model.getGiocatori(), ordine));
-        notifica(obs -> obs.onAvanzamentoTurno(model.getTurnoCorrente()));
-        coordinatore.avviaTurnoCorrente();
+        List<String> nomiPedine = nomiGiocatori.stream()
+            .map(lobby::getNomePedina)
+            .toList();
+
+        List<String> ordine = lobby.getNomiOrdinati();
+        notifica(obs -> obs.onGiocatoriInizializzati(nomiPedine, nomiGiocatori, ordine));
+        notifica(obs -> obs.onInizioPrimoRound());
     }
 }

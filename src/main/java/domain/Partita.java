@@ -3,53 +3,47 @@ package domain;
 import java.util.ArrayList;
 import java.util.List;
 
+import domain.caselle.CasellaEvento;
+import domain.contratti.GestoreDomanda;
+import domain.dto.InfoGiocatori;
+import domain.dto.InfoTabellone;
+import domain.dto.RisultatoLancio;
+import domain.dto.RisultatoRisposta;
+import domain.regole.Regole;
+import domain.strategie.StrategiaEvento;
 
 public class Partita {
 
-    private static Partita istanza;
 
-    private Tabellone tabellone;
-    private List<String> nomiGiocatori;
-    private List<Integer> idGiocatori;
-    private List<Giocatore> giocatori;
+    private final GestoreDomanda gestoreDomanda;
+    private final Regole regole;
+    private final Tabellone   tabellone;
 
+    private Lobby lobby;
     private Turno turnoAttivo;
-    private int turnoCorrente = 1;
+    private int roundCorrente = 1;
     private int indiceGiocatoreCorrente = 0;
     private Giocatore giocatoreCorrente;
 
-    private boolean   isGiocoFinito = false;
+    private boolean isGiocoFinito = false;
     private Giocatore vincitore;
 
     private StrategiaEvento strategyAttiva;
-    private Casella ultimaCasella;
 
-    private Partita() {
-        this.giocatori = new ArrayList<>();
-        this.nomiGiocatori = new ArrayList<>();
-        this.idGiocatori = new ArrayList<>();
-    }
-
-    public static Partita getInstance() {
-        if (istanza == null) istanza = new Partita();
-        return istanza;
+    public Partita(GestoreDomanda gestoreDomanda, Tabellone tabellone, Regole regole) {
+        this.gestoreDomanda = gestoreDomanda;
+        this.tabellone   = tabellone;
+        this.regole = regole;
     }
 
     // =========================================================================
     // SETUP
     // =========================================================================
 
-    public void impostaMondoDiGioco(Tabellone tabellone, List<Giocatore> giocatoriPronti) {
-        this.tabellone  = tabellone;
-        this.giocatori  = giocatoriPronti;
-        ArrayList<String> ordineNomi = new ArrayList<>();
-        this.idGiocatori = new ArrayList<>();
-        for (Giocatore g : giocatoriPronti) {
-            ordineNomi.add(g.getUsername());
-            idGiocatori.add(g.getIdGiocatore());
-        }
-        this.nomiGiocatori = ordineNomi;
-        this.giocatoreCorrente = giocatori.get(0);
+    public void setLobby(Lobby lobby) {
+        this.lobby = lobby;
+        this.giocatoreCorrente = lobby.getGiocatori().get(0);
+        this.indiceGiocatoreCorrente = 0;
     }
 
     // =========================================================================
@@ -57,36 +51,21 @@ public class Partita {
     // =========================================================================
 
     public RisultatoLancio eseguiLancioEAssegnaCasella() {
-        turnoAttivo = new Turno(giocatoreCorrente, tabellone);
-        ArrayList<Object> r = turnoAttivo.gioca();
-
-        int passi = (int) r.get(0);
-        Casella casella = (Casella) r.get(1);
-        Dado dado = (Dado) r.get(2);
-        String bonus = r.size() > 3 ? (String) r.get(3) : "";
-        this.ultimaCasella = casella;
-
-
-        return new RisultatoLancio(passi, casella.getNumeroCasella(),
-                dado.getPuntiDado(), dado.toString(), bonus, casella.ottieniDispatcher());
+        turnoAttivo = new Turno(giocatoreCorrente, tabellone, gestoreDomanda, regole.getRegoleDomanda());
+        return turnoAttivo.gioca();
     }
 
-    // =========================================================================
-    // DOMANDE
-    // =========================================================================
+    public boolean haAltreDomande() { 
+        return turnoAttivo.haAltreDomande(); 
+    }
 
-    public boolean haAltreDomande() { return turnoAttivo.haAltreDomande(); }
-    public Domanda getProssimaDomanda() { return turnoAttivo.pescaProssimaDomanda(); }
+    public Domanda getProssimaDomanda() { 
+        return turnoAttivo.pescaProssimaDomanda(); 
+    }
 
     public RisultatoRisposta processaRisposta(String risposta) {
-        ArrayList<Object> esito = turnoAttivo.verificaRisposta(risposta);
         turnoAttivo.incrementaSottoTurno();
-        boolean corretta = (boolean) esito.get(0);
-        String  bonusMsg = (String)  esito.get(1);
-        int punti = (int) esito.get(2);
-        char rc = esito.size() > 3 ? (char) esito.get(3) : ' ';
-        int totali = giocatoreCorrente.getPedina().getPuntiConoscenza();
-        return new RisultatoRisposta(corretta, bonusMsg, punti, rc, totali);
+        return turnoAttivo.verificaRisposta(risposta);
     }
 
     // =========================================================================
@@ -94,34 +73,23 @@ public class Partita {
     // =========================================================================
 
     public void preparaEvento() {
-        CasellaEvento ce = (CasellaEvento) ultimaCasella;
-        strategyAttiva = ce.getStrategia();
-        if (strategyAttiva != null) strategyAttiva.inizializza(giocatoreCorrente, giocatori);
+        CasellaEvento ce = (CasellaEvento) turnoAttivo.getCasellaArrivo();
+        strategyAttiva = ce.getStrategia(tabellone.getStatoCaselle());
+        if (strategyAttiva != null) strategyAttiva.inizializza(giocatoreCorrente, regole.getRegoleEvento(), tabellone);
     }
 
-    /** Restituisce la strategy attiva: il controller ci parla direttamente. */
-    public StrategiaEvento getStrategiaAttiva() { return strategyAttiva; }
-
-    public boolean isEventoAttivo() { return strategyAttiva != null; }
-
-    /**
-     * Operazione composta di dominio: trova il giocatore per nome nella lista
-     * e lo imposta come avversario sulla strategy.
-     */
-    public Giocatore setAvversarioEvento(String nome) {
-        Giocatore sfidato = trovaGiocatorePerNome(nome);
-        if (strategyAttiva != null) strategyAttiva.setAvversarioScelto(sfidato);
-        return sfidato;
+    public StrategiaEvento getStrategiaAttiva() { 
+        return strategyAttiva; 
     }
 
-    /**
-     * Dichiara esplicitamente un vincitore: usato da FineGiocoStrategy quando
-     * il giocatore raggiunge il traguardo, indipendentemente dalla soglia punti.
-     */
+    public boolean isEventoAttivo() { 
+        return strategyAttiva != null; 
+    }
+
     public void dichiaraVincitore(String nomeGiocatore) {
-        Giocatore g = trovaGiocatorePerNome(nomeGiocatore);
+        Giocatore g = lobby.trovaGiocatorePerNome(nomeGiocatore);
         if (g != null) {
-            this.vincitore    = g;
+            this.vincitore     = g;
             this.isGiocoFinito = true;
         }
     }
@@ -130,64 +98,82 @@ public class Partita {
     // GESTIONE TURNO
     // =========================================================================
 
-    /** Avanza al giocatore successivo; restituisce true se si è completato un round globale. */
     public boolean avanzaTurnoGiocatore() {
         verificaCondizioneVittoria(giocatoreCorrente);
         indiceGiocatoreCorrente++;
         boolean roundAvanzato = false;
-        if (indiceGiocatoreCorrente >= giocatori.size()) {
+        if (indiceGiocatoreCorrente >= lobby.getNumeroGiocatori()) {
             indiceGiocatoreCorrente = 0;
             if (!isGiocoFinito) {
-                CasellaEvento.avanzaRoundGlobale();
-                turnoCorrente++;
+                tabellone.roundAvanzato();
+                roundCorrente++;
                 roundAvanzato = true;
             }
         }
-        if (!isGiocoFinito) giocatoreCorrente = giocatori.get(indiceGiocatoreCorrente);
+        if (!isGiocoFinito) giocatoreCorrente = lobby.getGiocatoreByIndex(indiceGiocatoreCorrente);
         return roundAvanzato;
     }
 
-    public StatoTabellone getStatoTabellone() {
-        ArrayList<Integer> posizioni = new ArrayList<>();
-        ArrayList<Integer> punti     = new ArrayList<>();
-        for (Giocatore g : giocatori) {
-            posizioni.add(g.getPedina().getCasellaCorrente().getNumeroCasella());
-            punti.add(g.getPedina().getPuntiConoscenza());
-        }
-        return new StatoTabellone(nomiGiocatori, idGiocatori, posizioni, punti,
-                tabellone.getNumeroCaselle(), tabellone.getMappaCaselleEvento());
-    }
 
-    public void chiudiDB() { /*db.chiudiConnessione(); */ }
 
     // =========================================================================
     // GETTER
     // =========================================================================
 
-    public boolean isGiocoFinito() { return isGiocoFinito; }
-    public Giocatore getVincitore() { return vincitore; }
-    public int getTurnoCorrente() { return turnoCorrente; }
-    public Giocatore getGiocatoreCorrente() { return giocatoreCorrente; }
-    public List<Giocatore> getGiocatori() { return giocatori; }
-    public List<String> getNomiGiocatori() { return nomiGiocatori; }
+    public boolean isGiocoFinito() { 
+        return isGiocoFinito; 
+    }
 
-    public ArrayList<String> getNomiAvversariEscluso(Giocatore g) {
-        ArrayList<String> lista = new ArrayList<>();
-        for (Giocatore giac : giocatori) if (!giac.equals(g)) lista.add(giac.getUsername());
-        return lista;
+    public Giocatore getVincitore() { 
+        return vincitore; 
+    }
+
+    public int getRoundCorrente() { 
+        return roundCorrente; 
+    }
+
+    public Turno getTurnoAttivo() { 
+        return turnoAttivo; 
+    
+    }
+    public Giocatore getGiocatoreCorrente() {
+        return giocatoreCorrente; 
+    }
+
+    public List<Giocatore> getGiocatori() {
+        return lobby.getGiocatori(); 
+    }
+
+    public List<String> getNomiGiocatori() { 
+        return lobby.getNomiOrdinati(); 
+    }
+
+    public ArrayList<String> getNomiAvversari() {
+        return lobby.getNomiAvversariEscluso(this.giocatoreCorrente);
+    }
+
+    public Giocatore trovaGiocatorePerNome(String nome){
+        return lobby.trovaGiocatorePerNome(nome);
+    }
+
+    public InfoTabellone getInfoTabellone() {
+    return tabellone.getInfo();
+    }
+
+    public InfoGiocatori getInfoGiocatori() {
+        return lobby.getInfo();
+    }
+
+    public Regole getRegole(){
+        return this.regole;
     }
 
     // =========================================================================
     // PRIVATI
     // =========================================================================
 
-    private Giocatore trovaGiocatorePerNome(String nome) {
-        for (Giocatore g : giocatori) if (g.getUsername().equals(nome)) return g;
-        return null;
-    }
-
     private void verificaCondizioneVittoria(Giocatore g) {
-        if (g.getPedina().getPuntiConoscenza() >= Regole.getSogliaVittoria()) {
+        if (g.getPedina().getPuntiConoscenza() >= regole.getSogliaVittoria()) {
             isGiocoFinito = true;
             vincitore     = g;
         }

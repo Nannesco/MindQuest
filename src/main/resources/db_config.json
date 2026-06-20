@@ -1,0 +1,5 @@
+{
+  "url": "jdbc:sqlite:MindQuestDB.sqlite",
+  "user": "",
+  "password": ""
+}

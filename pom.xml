@@ -16,25 +16,31 @@
 
   
     <dependencies>
-     <!-- 
-        <dependency> //Dipendenza per MySQL, se si decide di utilizzare MySQL come database
-            <groupId>com.mysql</groupId>
+
+        <dependency> 
+            <groupId>com.mysql</groupId> <!-- Dipendenza per MySQL, se si decide di utilizzare MySQL come database -->
             <artifactId>mysql-connector-j</artifactId>
             <version>8.3.0</version>
         </dependency>
-    -->
 
-    <dependency>
-    <groupId>org.xerial</groupId> <!-- Dipendenza per SQLite, se si decide di utilizzare SQLite come database -->
-    <artifactId>sqlite-jdbc</artifactId>
-    <version>3.46.0.0</version>
-    </dependency>
 
-    <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>slf4j-nop</artifactId>
-        <version>1.7.36</version>
-    </dependency>
+        <dependency>
+            <groupId>org.xerial</groupId> <!-- Dipendenza per SQLite, se si decide di utilizzare SQLite come database -->
+            <artifactId>sqlite-jdbc</artifactId>
+            <version>3.46.0.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId><!-- Dipendenza utile per SQLite,  -->
+            <artifactId>slf4j-nop</artifactId>
+            <version>1.7.36</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.code.gson</groupId>  <!-- Dipendenza per file JSON -->
+            <artifactId>gson</artifactId>
+            <version>2.11.0</version>
+        </dependency>
 
     </dependencies>
 

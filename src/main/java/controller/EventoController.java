@@ -1,69 +1,43 @@
 package controller;
 
 import domain.*;
+import domain.contratti.NotificatoreEvento;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-class EventoController implements NotificatoreEvento {
+import controller.contratti.EventoObserver;
+import controller.contratti.EventoSubject;
+
+public class EventoController implements NotificatoreEvento, EventoSubject {
 
     private final Partita model;
-    private final List<PartitaObserver> observers;
-    private final Coordinatore coordinatore;
+    private final List<EventoObserver> observers;
 
-    EventoController(Partita model, List<PartitaObserver> observers, Coordinatore coordinatore) {
+
+    public EventoController(Partita model) {
         this.model = model;
-        this.observers = observers;
-        this.coordinatore = coordinatore;
+        this.observers = new ArrayList<>();
     }
 
-    private void notifica(Consumer<PartitaObserver> azione) {
-        for (PartitaObserver obs : observers) azione.accept(obs);
+    public void addObserver(EventoObserver observer) {
+        observers.add(observer);
+    }
+
+    private void notifica(Consumer<EventoObserver> azione) {
+        for (EventoObserver obs : observers) azione.accept(obs);
     }
 
     // EVENTI SEMPLICI
 
-    void eseguiEventoSemplice() {
-        String nomeG = model.getGiocatoreCorrente().getUsername();
-        model.getStrategiaAttiva().inviaNotifica(this, nomeG); // dispatch diretto alla strategy
-        coordinatore.concludiTurno();
+    public void eseguiEvento() {
+        model.getStrategiaAttiva().inviaNotifica(this);
     }
 
-    // SFIDA 1V1 
+ 
 
-    void onAvversarioScelto(String nomeAvversario) {
-        Giocatore sfidato = model.setAvversarioEvento(nomeAvversario);
-        String sfidante = model.getGiocatoreCorrente().getUsername();
-        if (sfidato != null) notifica(obs -> obs.onSfidaIniziata(sfidante, sfidato.getUsername()));
-        avanzaTurnoSfida(model.getStrategiaAttiva());
-    }
 
-    void onRispostaSfidaInserita(String risposta) {
-        StrategiaEvento sfida    = model.getStrategiaAttiva();
-        boolean corretto = sfida.verificaRispostaSfida(risposta);
-        char rc = sfida.getDomandaCorrente().getRispostaCorretta();
-        notifica(obs -> obs.onEsitoTurnoSfida(corretto, rc));
-
-        sfida.registraEsitoRisposta(corretto);
-
-        if (sfida.isFinito()) {
-            notifica(obs -> obs.onSfidaTerminata( sfida.getVincitoreSfida().getUsername(), sfida.getPerdenteSfida().getUsername(), sfida.getPuntiInPalio()));
-            coordinatore.concludiTurno();
-        } else if (sfida.isRoundConcluso()) {
-            notifica(obs -> obs.onMessaggioStato(sfida.getMessaggioRound()));
-            avanzaTurnoSfida(sfida);
-        } else {
-            avanzaTurnoSfida(sfida); // stesso round, turno dell'avversario
-        }
-    }
-
-    private void avanzaTurnoSfida(StrategiaEvento sfida) {
-        sfida.giocaProssimoTurno();
-        Domanda dom = sfida.getDomandaCorrente();
-        String nomeG = sfida.getGiocatoreCorrenteSfida().getUsername();
-        notifica(obs -> obs.onNuovoTurnoSfida(nomeG, dom.getTesto(), dom.getMateria(), dom.getDifficolta(), dom.getOpzioni()));
-    }
-
-    
     // NotificatoreEvento — dispatch polimorfico dalle strategy semplici
 
     @Override
@@ -82,12 +56,18 @@ class EventoController implements NotificatoreEvento {
     }
 
     @Override
-    public void onMaledizione(String nomeGiocatore) {
-        notifica(obs -> obs.onEventoAttivazioneMaledizione(nomeGiocatore));
+    public void onMaledizione(String nomeGiocatore, int numeroRound) {
+        notifica(obs -> obs.onEventoAttivazioneMaledizione(nomeGiocatore, numeroRound));
     }
 
     @Override
     public void onFineGioco(String nomeGiocatore) {
         model.dichiaraVincitore(nomeGiocatore);
+        notifica(obs -> obs.onFineTabellone(nomeGiocatore));
+    }
+
+    @Override
+    public void onSfida1v1(String nomeGiocatore, int puntiInPalio) {
+        notifica(obs -> obs.onCasella1v1(nomeGiocatore, puntiInPalio));
     }
 }
